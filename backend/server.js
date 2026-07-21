@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
+import { isEmailConfigured } from './utils/email.js';
 
 dotenv.config();
 connectDB();
@@ -39,4 +40,7 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`  Email (SMTP): ${isEmailConfigured() ? 'CONFIGURED' : 'NOT configured — verification/reset links will be logged to console, and new accounts auto-verify'}`);
+  console.log(`  Google OAuth: ${process.env.GOOGLE_CLIENT_ID ? 'CONFIGURED' : 'NOT configured'}`);
+  console.log(`  Client URL:   ${process.env.CLIENT_URL || 'http://localhost:3000'}`);
 });

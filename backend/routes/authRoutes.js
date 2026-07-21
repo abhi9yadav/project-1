@@ -67,12 +67,16 @@ router.post('/register', async (req, res) => {
 
     if (emailOn) {
       const link = `${clientUrl()}/verify-email?token=${raw}`;
-      await sendEmail({
-        to: user.email,
-        subject: 'Verify your email — DSA Tracker',
-        html: verificationEmail(user.name, link),
-        text: `Verify your email: ${link}`,
-      });
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Verify your email — DSA Tracker',
+          html: verificationEmail(user.name, link),
+          text: `Verify your email: ${link}`,
+        });
+      } catch (mailErr) {
+        console.error('Failed to send verification email:', mailErr.message);
+      }
 
       return res.status(201).json({
         needsVerification: true,
@@ -215,12 +219,16 @@ router.post('/resend-verification', async (req, res) => {
       await user.save();
 
       const link = `${clientUrl()}/verify-email?token=${raw}`;
-      await sendEmail({
-        to: user.email,
-        subject: 'Verify your email — DSA Tracker',
-        html: verificationEmail(user.name, link),
-        text: `Verify your email: ${link}`,
-      });
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Verify your email — DSA Tracker',
+          html: verificationEmail(user.name, link),
+          text: `Verify your email: ${link}`,
+        });
+      } catch (mailErr) {
+        console.error('Failed to send verification email:', mailErr.message);
+      }
     }
 
     res.json({ message: 'If an unverified account exists, a new link has been sent.' });
@@ -239,21 +247,27 @@ router.post('/forgot-password', async (req, res) => {
     const user = await User.findOne({ email: email?.toLowerCase() });
     let devResetLink;
 
-    // Only local accounts (with a password) can reset it.
-    if (user && user.password) {
+    // Send to any existing account. Google-only accounts (no password yet) can
+    // use this flow to SET a password so they can also log in with email.
+    if (user) {
+      const isSet = !user.password; // Google-only account setting a password
       const { raw, hash } = createToken();
       user.resetPasswordToken = hash;
       user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
       await user.save();
 
-      const link = `${clientUrl()}/reset-password?token=${raw}`;
+      const link = `${clientUrl()}/reset-password?token=${raw}&mode=${isSet ? 'set' : 'reset'}`;
       devResetLink = link;
-      await sendEmail({
-        to: user.email,
-        subject: 'Reset your password — DSA Tracker',
-        html: resetPasswordEmail(user.name, link),
-        text: `Reset your password: ${link}`,
-      });
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: isSet ? 'Set your password — DSA Tracker' : 'Reset your password — DSA Tracker',
+          html: resetPasswordEmail(user.name, link, isSet),
+          text: `${isSet ? 'Set' : 'Reset'} your password: ${link}`,
+        });
+      } catch (mailErr) {
+        console.error('Failed to send reset email:', mailErr.message);
+      }
     }
 
     // Generic response — never reveal whether the email exists.

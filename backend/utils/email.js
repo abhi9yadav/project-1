@@ -54,11 +54,15 @@ export const verificationEmail = (name, link) =>
      <p style="font-size:13px;color:#666">This link expires in 24 hours.</p>`
   );
 
-export const resetPasswordEmail = (name, link) =>
+export const resetPasswordEmail = (name, link, isSet = false) =>
   wrap(
-    'Reset your password',
-    `<p>Hi ${name || 'there'}, we received a request to reset your password.</p>
-     <p style="margin:22px 0">${button(link, 'Reset Password')}</p>
+    isSet ? 'Set your password' : 'Reset your password',
+    `<p>Hi ${name || 'there'}, ${
+      isSet
+        ? 'you can set a password for your account so you can also log in with your email (in addition to Google).'
+        : 'we received a request to reset your password.'
+    }</p>
+     <p style="margin:22px 0">${button(link, isSet ? 'Set Password' : 'Reset Password')}</p>
      <p style="font-size:13px;color:#666">Or paste this link into your browser:<br>${link}</p>
      <p style="font-size:13px;color:#666">This link expires in 1 hour.</p>`
   );
