@@ -247,21 +247,23 @@ router.post('/forgot-password', async (req, res) => {
     const user = await User.findOne({ email: email?.toLowerCase() });
     let devResetLink;
 
-    // Only local accounts (with a password) can reset it.
-    if (user && user.password) {
+    // Send to any existing account. Google-only accounts (no password yet) can
+    // use this flow to SET a password so they can also log in with email.
+    if (user) {
+      const isSet = !user.password; // Google-only account setting a password
       const { raw, hash } = createToken();
       user.resetPasswordToken = hash;
       user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
       await user.save();
 
-      const link = `${clientUrl()}/reset-password?token=${raw}`;
+      const link = `${clientUrl()}/reset-password?token=${raw}&mode=${isSet ? 'set' : 'reset'}`;
       devResetLink = link;
       try {
         await sendEmail({
           to: user.email,
-          subject: 'Reset your password — DSA Tracker',
-          html: resetPasswordEmail(user.name, link),
-          text: `Reset your password: ${link}`,
+          subject: isSet ? 'Set your password — DSA Tracker' : 'Reset your password — DSA Tracker',
+          html: resetPasswordEmail(user.name, link, isSet),
+          text: `${isSet ? 'Set' : 'Reset'} your password: ${link}`,
         });
       } catch (mailErr) {
         console.error('Failed to send reset email:', mailErr.message);
