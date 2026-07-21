@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import GoogleAuthButton from '../components/GoogleAuthButton';
 
 const Register = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(null); // { email, devVerifyLink }
 
   const { register } = useAuth();
   const toast = useToast();
@@ -18,26 +20,44 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
+    if (form.password !== form.confirmPassword) return setError('Passwords do not match');
+    if (form.password.length < 6) return setError('Password must be at least 6 characters');
 
     setLoading(true);
     try {
-      await register(form.name, form.email, form.password);
-      toast.success('Account created!');
-      navigate('/dashboard');
+      const res = await register(form.name, form.email, form.password);
+      if (res.needsVerification) {
+        setSent({ email: res.email, devVerifyLink: res.devVerifyLink });
+      } else {
+        toast.success('Account created!');
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
+
+  if (sent) {
+    return (
+      <div className="page page-narrow">
+        <div className="card" style={{ textAlign: 'center' }}>
+          <div className="verify-icon info">✉</div>
+          <h1 className="section-title">Check your email</h1>
+          <p className="section-sub">
+            We sent a verification link to <strong>{sent.email}</strong>. Click it to activate your account.
+          </p>
+          {sent.devVerifyLink && (
+            <div className="alert" style={{ background: 'var(--primary-soft)', color: 'var(--primary)' }}>
+              Dev mode: <Link to={sent.devVerifyLink.replace(/^.*(\/verify-email.*)$/, '$1')}>open verification link</Link>
+            </div>
+          )}
+          <Link to="/login" className="btn btn-ghost">Back to login</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page page-narrow">
@@ -72,6 +92,8 @@ const Register = () => {
             {loading ? 'Creating account…' : 'Register'}
           </button>
         </form>
+
+        <GoogleAuthButton />
 
         <p style={{ textAlign: 'center', marginTop: 20, color: 'var(--text-muted)' }}>
           Already have an account? <Link to="/login">Login</Link>

@@ -14,3 +14,23 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
+      # Frontend base URL for verification/reset links (same as the service URL
+      # for single-service; set to your frontend URL if hosting separately).
+      - key: CLIENT_URL
+        sync: false
+      # Email (optional) — if unset, verification/reset links are logged to console.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      # Google OAuth (optional). Also set VITE_GOOGLE_CLIENT_ID for the frontend build.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
