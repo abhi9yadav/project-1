@@ -1,84 +1,55 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const toast = useToast();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
+    toast.info('Logged out');
     navigate('/');
   };
 
   return (
-    <nav style={styles.navbar}>
-      <div style={styles.container}>
-        <Link to="/" style={styles.logo}>DSA Tracker</Link>
-        <div style={styles.links}>
-          <Link to="/" style={styles.link}>Home</Link>
+    <nav className="navbar">
+      <div className="navbar-inner">
+        <Link to="/" className="brand">
+          <span className="brand-mark">◈</span>
+          DSA Tracker
+        </Link>
+
+        <div className="nav-links">
+          <NavLink to="/" className="nav-link" end>Home</NavLink>
+          <NavLink to="/sheets" className="nav-link">Sheets</NavLink>
           {user ? (
             <>
-              <Link to="/dashboard" style={styles.link}>Dashboard</Link>
-              {user.isAdmin && (
-                <Link to="/admin" style={styles.link}>Admin Panel</Link>
-              )}
-              <span style={styles.userName}>{user.name}</span>
-              <button onClick={handleLogout} style={styles.logoutBtn}>Logout</button>
+              <NavLink to="/dashboard" className="nav-link">Dashboard</NavLink>
+              {user.isAdmin && <NavLink to="/admin" className="nav-link">Admin</NavLink>}
+              <span className="nav-user">Hi, {user.name.split(' ')[0]}</span>
+              <button onClick={handleLogout} className="btn btn-ghost btn-sm">Logout</button>
             </>
           ) : (
             <>
-              <Link to="/login" style={styles.link}>Login</Link>
-              <Link to="/register" style={styles.link}>Register</Link>
+              <NavLink to="/login" className="nav-link">Login</NavLink>
+              <NavLink to="/register" className="btn btn-primary btn-sm">Register</NavLink>
             </>
           )}
+          <button
+            className="icon-btn"
+            onClick={toggleTheme}
+            title={theme === 'light' ? 'Switch to dark' : 'Switch to light'}
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
         </div>
       </div>
     </nav>
   );
-};
-
-const styles = {
-  navbar: {
-    backgroundColor: '#2c3e50',
-    padding: '15px 0',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '0 20px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  logo: {
-    color: 'white',
-    fontSize: '24px',
-    fontWeight: 'bold',
-    textDecoration: 'none',
-  },
-  links: {
-    display: 'flex',
-    gap: '20px',
-    alignItems: 'center',
-  },
-  link: {
-    color: 'white',
-    textDecoration: 'none',
-    fontSize: '16px',
-  },
-  userName: {
-    color: '#bdc3c7',
-    fontSize: '14px',
-  },
-  logoutBtn: {
-    backgroundColor: '#e74c3c',
-    color: 'white',
-    border: 'none',
-    padding: '8px 16px',
-    borderRadius: '5px',
-    cursor: 'pointer',
-  },
 };
 
 export default Navbar;

@@ -1,31 +1,36 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const Register = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const { register } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
+
+  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (password !== confirmPassword) {
+    if (form.password !== form.confirmPassword) {
       setError('Passwords do not match');
+      return;
+    }
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters');
       return;
     }
 
     setLoading(true);
-
     try {
-      await register(name, email, password);
+      await register(form.name, form.email, form.password);
+      toast.success('Account created!');
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -35,129 +40,45 @@ const Register = () => {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Register</h1>
-        {error && <div style={styles.error}>{error}</div>}
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              style={styles.input}
-              required
-            />
+    <div className="page page-narrow">
+      <div className="card">
+        <h1 className="section-title" style={{ textAlign: 'center' }}>Create account</h1>
+        <p className="section-sub" style={{ textAlign: 'center' }}>Start tracking your DSA progress</p>
+
+        {error && <div className="alert alert-error">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Name</label>
+            <input className="input" type="text" name="name" value={form.name}
+              onChange={change} required autoFocus />
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              required
-            />
+          <div className="field">
+            <label>Email</label>
+            <input className="input" type="email" name="email" value={form.email}
+              onChange={change} required />
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              required
-            />
+          <div className="field">
+            <label>Password</label>
+            <input className="input" type="password" name="password" value={form.password}
+              onChange={change} required />
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Confirm Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              style={styles.input}
-              required
-            />
+          <div className="field">
+            <label>Confirm Password</label>
+            <input className="input" type="password" name="confirmPassword" value={form.confirmPassword}
+              onChange={change} required />
           </div>
-          <button type="submit" style={styles.btn} disabled={loading}>
-            {loading ? 'Creating account...' : 'Register'}
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? 'Creating account…' : 'Register'}
           </button>
         </form>
-        <p style={styles.text}>
-          Already have an account? <Link to="/login" style={styles.link}>Login</Link>
+
+        <p style={{ textAlign: 'center', marginTop: 20, color: 'var(--text-muted)' }}>
+          Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-  },
-  card: {
-    background: 'white',
-    padding: '40px',
-    borderRadius: '10px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '400px',
-  },
-  title: {
-    textAlign: 'center',
-    color: '#2c3e50',
-    marginBottom: '30px',
-  },
-  error: {
-    backgroundColor: '#fee',
-    color: '#c00',
-    padding: '10px',
-    borderRadius: '5px',
-    marginBottom: '20px',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  label: {
-    fontWeight: 'bold',
-    color: '#555',
-  },
-  input: {
-    padding: '12px',
-    border: '1px solid #ddd',
-    borderRadius: '5px',
-    fontSize: '16px',
-  },
-  btn: {
-    backgroundColor: '#2ecc71',
-    color: 'white',
-    border: 'none',
-    padding: '14px',
-    borderRadius: '5px',
-    fontSize: '16px',
-    cursor: 'pointer',
-  },
-  text: {
-    textAlign: 'center',
-    marginTop: '20px',
-    color: '#7f8c8d',
-  },
-  link: {
-    color: '#2ecc71',
-    textDecoration: 'none',
-  },
 };
 
 export default Register;

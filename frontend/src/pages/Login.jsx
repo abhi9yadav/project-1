@@ -1,23 +1,25 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const { login } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      await login(email, password);
+      const u = await login(email, password);
+      toast.success(`Welcome back, ${u.name.split(' ')[0]}!`);
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
@@ -27,109 +29,35 @@ const Login = () => {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Login</h1>
-        {error && <div style={styles.error}>{error}</div>}
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              required
-            />
+    <div className="page page-narrow">
+      <div className="card">
+        <h1 className="section-title" style={{ textAlign: 'center' }}>Welcome back</h1>
+        <p className="section-sub" style={{ textAlign: 'center' }}>Log in to continue your journey</p>
+
+        {error && <div className="alert alert-error">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Email</label>
+            <input className="input" type="email" value={email}
+              onChange={(e) => setEmail(e.target.value)} required autoFocus />
           </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              required
-            />
+          <div className="field">
+            <label>Password</label>
+            <input className="input" type="password" value={password}
+              onChange={(e) => setPassword(e.target.value)} required />
           </div>
-          <button type="submit" style={styles.btn} disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
+          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+            {loading ? 'Logging in…' : 'Login'}
           </button>
         </form>
-        <p style={styles.text}>
-          Don't have an account? <Link to="/register" style={styles.link}>Register</Link>
+
+        <p style={{ textAlign: 'center', marginTop: 20, color: 'var(--text-muted)' }}>
+          Don't have an account? <Link to="/register">Register</Link>
         </p>
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-  },
-  card: {
-    background: 'white',
-    padding: '40px',
-    borderRadius: '10px',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '400px',
-  },
-  title: {
-    textAlign: 'center',
-    color: '#2c3e50',
-    marginBottom: '30px',
-  },
-  error: {
-    backgroundColor: '#fee',
-    color: '#c00',
-    padding: '10px',
-    borderRadius: '5px',
-    marginBottom: '20px',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-  },
-  inputGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  label: {
-    fontWeight: 'bold',
-    color: '#555',
-  },
-  input: {
-    padding: '12px',
-    border: '1px solid #ddd',
-    borderRadius: '5px',
-    fontSize: '16px',
-  },
-  btn: {
-    backgroundColor: '#3498db',
-    color: 'white',
-    border: 'none',
-    padding: '14px',
-    borderRadius: '5px',
-    fontSize: '16px',
-    cursor: 'pointer',
-  },
-  text: {
-    textAlign: 'center',
-    marginTop: '20px',
-    color: '#7f8c8d',
-  },
-  link: {
-    color: '#3498db',
-    textDecoration: 'none',
-  },
 };
 
 export default Login;
