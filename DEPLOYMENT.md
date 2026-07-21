@@ -65,3 +65,38 @@ Recommended host: **Render** (free tier) + your existing **MongoDB Atlas** datab
   set, and the axios client will call that backend instead of same-origin `/api`.
 - **Free tier sleep:** Render free services spin down when idle and take a few
   seconds to wake on the next request. That's normal.
+
+---
+
+## Email verification, password reset & Google login
+
+These features degrade gracefully — the app works even if you don't configure
+them:
+
+- **Email (SMTP):** If `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS` are **not** set,
+  new accounts are auto-verified and verification/reset links are printed to the
+  server console instead of emailed. Set these vars to enable real emails
+  (e.g. Gmail app password, SendGrid, Mailgun, Resend SMTP).
+- **Password reset:** Works out of the box. With email off (dev), the reset link
+  is returned in the API response and shown in the UI; with email on, it's sent
+  to the user.
+- **Google login:** Optional. Requires a Google OAuth **Web** client
+  (https://console.cloud.google.com → Credentials). Then set:
+  - Backend: `GOOGLE_CLIENT_ID`
+  - Frontend build: `VITE_GOOGLE_CLIENT_ID` (same value)
+  - In the Google console, add your frontend origin to **Authorized JavaScript
+    origins** (e.g. `http://localhost:3000` and your deployed frontend URL).
+  If `VITE_GOOGLE_CLIENT_ID` is unset, the Google button simply doesn't render.
+
+### Relevant environment variables
+
+| Variable | Where | Purpose |
+| --- | --- | --- |
+| `CLIENT_URL` | backend | Base URL used in email links |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | backend | SMTP server |
+| `EMAIL_FROM` | backend | "From" address for emails |
+| `GOOGLE_CLIENT_ID` | backend | Verifies Google ID tokens |
+| `VITE_GOOGLE_CLIENT_ID` | frontend build | Renders the Google button |
+
+> Reminder: Vite bakes `VITE_*` vars at **build time** — set them before/at build
+> and trigger a rebuild for changes to take effect.

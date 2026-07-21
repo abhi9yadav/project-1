@@ -82,11 +82,46 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     const { data } = await client.post('/auth/register', { name, email, password });
+    // When email verification is required, the server doesn't log the user in.
+    if (data.needsVerification) {
+      return { needsVerification: true, email: data.email, devVerifyLink: data.devVerifyLink };
+    }
     persistUser(data);
     const profile = await fetchProfile();
     const merged = profile ? { ...data, ...profile, token: data.token } : data;
     persistUser(merged);
     return merged;
+  };
+
+  // Complete a session from an auth response that already contains a token
+  // (used by Google login, email verification, and password reset).
+  const completeSession = async (data) => {
+    persistUser(data);
+    const profile = await fetchProfile();
+    const merged = profile ? { ...data, ...profile, token: data.token } : data;
+    persistUser(merged);
+    return merged;
+  };
+
+  const loginWithGoogle = async (credential) => {
+    const { data } = await client.post('/auth/google', { credential });
+    return completeSession(data);
+  };
+
+  const verifyEmail = async (token) => {
+    const { data } = await client.post('/auth/verify-email', { token });
+    return completeSession(data);
+  };
+
+  const resendVerification = (email) =>
+    client.post('/auth/resend-verification', { email });
+
+  const forgotPassword = (email) =>
+    client.post('/auth/forgot-password', { email }).then((r) => r.data);
+
+  const resetPassword = async (token, password) => {
+    const { data } = await client.post('/auth/reset-password', { token, password });
+    return completeSession(data);
   };
 
   const logout = () => {
@@ -101,6 +136,11 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     refreshUser,
+    loginWithGoogle,
+    verifyEmail,
+    resendVerification,
+    forgotPassword,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

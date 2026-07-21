@@ -9,16 +9,32 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    lowercase: true,
+    trim: true
   },
   password: {
     type: String,
-    required: true
+    // Password is required only for local accounts (not Google sign-in).
+    required: function () {
+      return !this.googleId;
+    }
+  },
+  googleId: {
+    type: String
   },
   isAdmin: {
     type: Boolean,
     default: false
   },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationToken: String,
+  verificationTokenExpires: Date,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
   solvedQuestions: [{
     questionId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -61,7 +77,7 @@ userSchema.pre('save', async function() {
   // Only hash the password when it has been set or changed.
   // Without this guard the already-hashed password would be re-hashed
   // on every save (solve/star/note), which breaks login.
-  if (!this.isModified('password')) {
+  if (!this.isModified('password') || !this.password) {
     return;
   }
   const salt = await bcrypt.genSalt(10);
@@ -69,6 +85,8 @@ userSchema.pre('save', async function() {
 });
 
 userSchema.methods.matchPassword = async function(enteredPassword) {
+  // Google-only accounts have no password set.
+  if (!this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
