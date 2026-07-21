@@ -187,15 +187,17 @@ router.put('/:id', protect, admin, async (req, res) => {
     const question = await Question.findById(req.params.id);
 
     if (question) {
+      // Required fields: keep existing value if a new one isn't provided.
       question.title = req.body.title || question.title;
       question.sheet = req.body.sheet || question.sheet;
       question.topic = req.body.topic || question.topic;
       question.subtopic = req.body.subtopic || question.subtopic;
       question.level = req.body.level || question.level;
       question.questionLink = req.body.questionLink || question.questionLink;
-      question.videoLink = req.body.videoLink || question.videoLink;
-      question.resources = req.body.resources || question.resources;
-      question.similarQuestions = req.body.similarQuestions || question.similarQuestions;
+      // Optional fields: allow explicit values, including clearing to empty.
+      if (req.body.videoLink !== undefined) question.videoLink = req.body.videoLink;
+      if (req.body.resources !== undefined) question.resources = req.body.resources;
+      if (req.body.similarQuestions !== undefined) question.similarQuestions = req.body.similarQuestions;
 
       const updatedQuestion = await question.save();
       res.json(updatedQuestion);

@@ -1,25 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import Spinner from '../components/Spinner';
+
+const TOTAL_TARGET = 150;
+const LEVEL_TARGETS = { easy: 50, medium: 70, hard: 30 };
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [stats, setStats] = useState({ total: 0, easy: 0, medium: 0, hard: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
     const fetchStats = async () => {
       try {
-        const { data } = await axios.get('/api/questions/progress/stats', {
-          headers: { Authorization: `Bearer ${user.token}` }
-        });
+        const { data } = await client.get('/questions/progress/stats');
         setStats(data);
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -27,85 +22,70 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
-
     fetchStats();
-  }, [user, navigate]);
+  }, []);
 
-  if (loading || !user) return <div style={styles.loading}>Loading...</div>;
+  if (loading) return <Spinner label="Loading your progress…" />;
 
-  const totalQuestions = 150; // Example total - adjust based on your sheet
-  const progressPercent = Math.round((stats.total / totalQuestions) * 100);
+  const progressPercent = Math.min(100, Math.round((stats.total / TOTAL_TARGET) * 100));
+  const starred = user?.starredQuestions?.length || 0;
+
+  const cards = [
+    { label: 'Total Solved', value: stats.total, glyph: '🏆', bg: 'linear-gradient(135deg,#5b6cff,#9b59f6)' },
+    { label: 'Easy', value: stats.easy, glyph: '🟢', bg: 'linear-gradient(135deg,#22c55e,#16a34a)' },
+    { label: 'Medium', value: stats.medium, glyph: '🟠', bg: 'linear-gradient(135deg,#f59e0b,#d97706)' },
+    { label: 'Hard', value: stats.hard, glyph: '🔴', bg: 'linear-gradient(135deg,#ef4444,#dc2626)' },
+  ];
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Welcome, {user.name}!</h1>
-      
-      <div style={styles.statsGrid}>
-        <div style={{...styles.statCard, backgroundColor: '#3498db'}}>
-          <h3>Total Solved</h3>
-          <p style={styles.statNumber}>{stats.total}</p>
+    <div className="page">
+      <h1 className="section-title">Welcome, {user.name.split(' ')[0]} 👋</h1>
+      <p className="section-sub">Here's how your preparation is going.</p>
+
+      <div className="stats-grid">
+        {cards.map((c) => (
+          <div className="stat-card" key={c.label} style={{ background: c.bg }}>
+            <span className="glyph">{c.glyph}</span>
+            <div className="label">{c.label}</div>
+            <div className="value">{c.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 18 }}>Overall Progress</h2>
+          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+            {stats.total} / {TOTAL_TARGET} ({progressPercent}%)
+          </span>
         </div>
-        <div style={{...styles.statCard, backgroundColor: '#4CAF50'}}>
-          <h3>Easy</h3>
-          <p style={styles.statNumber}>{stats.easy}</p>
-        </div>
-        <div style={{...styles.statCard, backgroundColor: '#FF9800'}}>
-          <h3>Medium</h3>
-          <p style={styles.statNumber}>{stats.medium}</p>
-        </div>
-        <div style={{...styles.statCard, backgroundColor: '#f44336'}}>
-          <h3>Hard</h3>
-          <p style={styles.statNumber}>{stats.hard}</p>
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
         </div>
       </div>
 
-      <div style={styles.progressSection}>
-        <h2>Overall Progress</h2>
-        <div style={styles.progressBar}>
-          <div style={{...styles.progressFill, width: `${progressPercent}%`, backgroundColor: '#3498db'}}></div>
-        </div>
-        <p>{progressPercent}% Complete ({stats.total}/{totalQuestions})</p>
-      </div>
-
-      <div style={styles.levelProgress}>
-        <h3>Level-wise Progress</h3>
-        <div style={styles.levelBar}>
-          <span>Easy:</span>
-          <div style={styles.barContainer}>
-            <div style={{...styles.barFill, width: `${Math.min(100, (stats.easy / 50) * 100)}%`, backgroundColor: '#4CAF50'}}></div>
-          </div>
-        </div>
-        <div style={styles.levelBar}>
-          <span>Medium:</span>
-          <div style={styles.barContainer}>
-            <div style={{...styles.barFill, width: `${Math.min(100, (stats.medium / 70) * 100)}%`, backgroundColor: '#FF9800'}}></div>
-          </div>
-        </div>
-        <div style={styles.levelBar}>
-          <span>Hard:</span>
-          <div style={styles.barContainer}>
-            <div style={{...styles.barFill, width: `${Math.min(100, (stats.hard / 30) * 100)}%`, backgroundColor: '#f44336'}}></div>
-          </div>
+      <div className="card">
+        <h2 style={{ fontSize: 18, marginBottom: 18 }}>Level Breakdown</h2>
+        {['easy', 'medium', 'hard'].map((lvl) => {
+          const pct = Math.min(100, Math.round((stats[lvl] / LEVEL_TARGETS[lvl]) * 100));
+          const color = lvl === 'easy' ? 'var(--easy)' : lvl === 'medium' ? 'var(--medium)' : 'var(--hard)';
+          return (
+            <div className="level-row" key={lvl}>
+              <span className="lname" style={{ textTransform: 'capitalize' }}>{lvl}</span>
+              <div className="progress-track" style={{ flex: 1 }}>
+                <div className="progress-fill" style={{ width: `${pct}%`, background: color }} />
+              </div>
+              <span className="count">{stats[lvl]}/{LEVEL_TARGETS[lvl]}</span>
+            </div>
+          );
+        })}
+        <div className="level-row" style={{ marginTop: 8 }}>
+          <span className="lname">⭐ Starred</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>{starred} question{starred === 1 ? '' : 's'} bookmarked</span>
         </div>
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: { maxWidth: '1200px', margin: '0 auto', padding: '20px' },
-  title: { textAlign: 'center', color: '#2c3e50', marginBottom: '30px' },
-  loading: { textAlign: 'center', padding: '40px', fontSize: '20px' },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' },
-  statCard: { color: 'white', padding: '20px', borderRadius: '10px', textAlign: 'center' },
-  statNumber: { fontSize: '36px', fontWeight: 'bold', margin: '10px 0 0' },
-  progressSection: { background: 'white', padding: '20px', borderRadius: '10px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
-  progressBar: { width: '100%', height: '30px', backgroundColor: '#e0e0e0', borderRadius: '15px', overflow: 'hidden', margin: '10px 0' },
-  progressFill: { height: '100%', transition: 'width 0.3s ease' },
-  levelProgress: { background: 'white', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
-  levelBar: { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' },
-  barContainer: { flex: 1, height: '20px', backgroundColor: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' },
-  barFill: { height: '100%', transition: 'width 0.3s ease' },
 };
 
 export default Dashboard;
