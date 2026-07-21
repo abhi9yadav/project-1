@@ -67,12 +67,16 @@ router.post('/register', async (req, res) => {
 
     if (emailOn) {
       const link = `${clientUrl()}/verify-email?token=${raw}`;
-      await sendEmail({
-        to: user.email,
-        subject: 'Verify your email — DSA Tracker',
-        html: verificationEmail(user.name, link),
-        text: `Verify your email: ${link}`,
-      });
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Verify your email — DSA Tracker',
+          html: verificationEmail(user.name, link),
+          text: `Verify your email: ${link}`,
+        });
+      } catch (mailErr) {
+        console.error('Failed to send verification email:', mailErr.message);
+      }
 
       return res.status(201).json({
         needsVerification: true,
@@ -215,12 +219,16 @@ router.post('/resend-verification', async (req, res) => {
       await user.save();
 
       const link = `${clientUrl()}/verify-email?token=${raw}`;
-      await sendEmail({
-        to: user.email,
-        subject: 'Verify your email — DSA Tracker',
-        html: verificationEmail(user.name, link),
-        text: `Verify your email: ${link}`,
-      });
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Verify your email — DSA Tracker',
+          html: verificationEmail(user.name, link),
+          text: `Verify your email: ${link}`,
+        });
+      } catch (mailErr) {
+        console.error('Failed to send verification email:', mailErr.message);
+      }
     }
 
     res.json({ message: 'If an unverified account exists, a new link has been sent.' });
@@ -248,12 +256,16 @@ router.post('/forgot-password', async (req, res) => {
 
       const link = `${clientUrl()}/reset-password?token=${raw}`;
       devResetLink = link;
-      await sendEmail({
-        to: user.email,
-        subject: 'Reset your password — DSA Tracker',
-        html: resetPasswordEmail(user.name, link),
-        text: `Reset your password: ${link}`,
-      });
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Reset your password — DSA Tracker',
+          html: resetPasswordEmail(user.name, link),
+          text: `Reset your password: ${link}`,
+        });
+      } catch (mailErr) {
+        console.error('Failed to send reset email:', mailErr.message);
+      }
     }
 
     // Generic response — never reveal whether the email exists.
